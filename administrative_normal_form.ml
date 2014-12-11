@@ -1,5 +1,5 @@
 open Core.Std
-module Instruction = Ollvm.Ez.Instr
+open Llvm
 
 (* Administrative Normal Form is an intermediate representation that
  * can be easily converted into static single assignment form *)
@@ -21,6 +21,7 @@ module Type =
       | Integer of int
       | Real of int
       | Character
+      | Pointer of t
       | Vector of t
       | Tuple of t list
       | Function of t * t
@@ -36,6 +37,7 @@ module Type =
       | Integer n -> "Integer" ^ Int.to_string n
       | Real n -> "Real" ^ Int.to_string n
       | Character -> "Character"
+      | Pointer t -> "@" ^ to_string t
       | Vector element -> "<" ^ to_string element ^ ">"
       | Tuple elements -> "(" ^ String.concat (List.map elements ~f: to_string) ~sep:", " ^ ")"
       | Function (Function _ as f, result) -> "(" ^ to_string f ^ ")" ^ " -> " ^ to_string result
@@ -45,15 +47,18 @@ module Type =
 module Primitive_operation =
   struct
     type t =
+      | Allocate of Type.t
       | Natural_add of int
       | Natural_subtract of int
     let type_of = function
+      | Allocate kind -> Type.Function (Tuple [], kind)
       | Natural_add width -> Type.binary_operator (Type.Natural width)
       | Natural_subtract width -> Type.binary_operator (Type.Natural width)
     let to_llvm = function
       | Natural_add _ -> Instruction.add ~nsw: false ~nuw: false
       | Natural_subtract _ -> Instruction.sub ~nsw: false ~nuw: false
     let to_string = function
+      | Allocate _ -> "allocate"
       | Natural_add _ -> "natural_add"
       | Natural_subtract _ -> "natural_subtract"
   end
@@ -224,7 +229,12 @@ module Expression =
 			      ; "subtract", of_primitive_operation (Primitive_operation.Natural_subtract 64)
 			      ]
     ;;
-    let rec to_llvm expression ?(name_bindings = String.Map.empty) =
+    let rec to_ssa expression ~name_bindings =
+      match expression with
+      | Let_recursive (function_name, argument_name, argument_type, body, continuation) ->
+	 ()
+    ;;
+    let rec to_llvm expression ~name_bindings =
       match expression with
       | Value (Terminal.Variable name) ->
 	 Attempt.of_option (String.Map.find name_bindings name) ~error: (Unbound_identifier name)
