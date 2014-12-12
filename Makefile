@@ -1,5 +1,5 @@
 SOURCES = $(shell ls *.ml)
-TARGET = administrative_normal_form
+TARGET = main
 
 all : $(SOURCES)
 	ocamlbuild -use-ocamlfind -pkgs core,sexplib,camlp4,ollvm -tag thread $(TARGET).native

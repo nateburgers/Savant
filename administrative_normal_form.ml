@@ -1,5 +1,4 @@
 open Core.Std
-open Llvm
 
 (* Administrative Normal Form is an intermediate representation that
  * can be easily converted into static single assignment form *)
@@ -51,12 +50,9 @@ module Primitive_operation =
       | Natural_add of int
       | Natural_subtract of int
     let type_of = function
-      | Allocate kind -> Type.Function (Tuple [], kind)
+      | Allocate kind -> Type.Function (Type.Tuple [], kind)
       | Natural_add width -> Type.binary_operator (Type.Natural width)
       | Natural_subtract width -> Type.binary_operator (Type.Natural width)
-    let to_llvm = function
-      | Natural_add _ -> Instruction.add ~nsw: false ~nuw: false
-      | Natural_subtract _ -> Instruction.sub ~nsw: false ~nuw: false
     let to_string = function
       | Allocate _ -> "allocate"
       | Natural_add _ -> "natural_add"
